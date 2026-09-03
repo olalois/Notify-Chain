@@ -71,6 +71,12 @@ describe('calculateBackoffDelay', () => {
   it('uses custom multiplier', () => {
     expect(calculateBackoffDelay(2, 1000, 3, 100_000, false)).toBe(9000); // 1000*3^2
   });
+
+  it('never exceeds the configured cap when jitter is enabled', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(1);
+    expect(calculateBackoffDelay(10, 1000, 2, 5000, true)).toBe(5000);
+    jest.restoreAllMocks();
+  });
 });
 
 // ─── RetryScheduler ──────────────────────────────────────────────────────────

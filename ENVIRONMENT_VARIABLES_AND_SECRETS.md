@@ -106,9 +106,10 @@ Both variables must be provided together or neither.
 | `DISCORD_WEBHOOK_URL` | *(none)* | Conditional | Full Discord webhook URL from Server Settings → Integrations → Webhooks. ⚠️ Secret. |
 | `DISCORD_WEBHOOK_ID` | *(none)* | Conditional | Numeric Discord webhook ID (portion of the URL). ⚠️ Secret. |
 | `DISCORD_RETRY_COUNT` | *(uses `RETRY_MAX_RETRIES`)* | No | Override the number of delivery retries specifically for Discord notifications. |
-| `DISCORD_BACKOFF_BASE_SECONDS` | *(uses `RETRY_BASE_DELAY_MS` / 1000)* | No | Override the exponential backoff base (in seconds) for Discord delivery retries. |
 | `NOTIFICATION_DEDUPLICATION_WINDOW_MS` | `60000` | No | Window (ms) within which duplicate Discord sends are suppressed. |
 | `NOTIFICATION_DEDUPLICATION_MAX_SIZE` | `10000` | No | Maximum entries held in the Discord deduplication cache. |
+
+Notification retry backoff is configured by the shared `RETRY_*` variables below and applies independently of the provider.
 
 ### 2.7 Webhook security
 

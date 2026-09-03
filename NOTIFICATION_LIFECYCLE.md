@@ -388,7 +388,7 @@ consumer acknowledgment.
 ### Discord service internal retries
 
 `DiscordNotificationService` also retries within a single
-`sendEventNotification()` call (`retryCount` / `backoffBaseSeconds` from config)
+`sendEventNotification()` call (retry behavior is controlled by the shared `RETRY_*` configuration)
 before returning failure to the caller.
 
 Details: [NOTIFICATION_FAILURE_RECOVERY.md](NOTIFICATION_FAILURE_RECOVERY.md).

@@ -212,6 +212,22 @@ export const APP_CONFIG_SCHEMA: ConfigSchema = {
     batchSize: { type: 'number', min: 1 },
     timingBufferMs: { type: 'number', min: 0 },
   },
+  retryQueue: {
+    baseDelayMs: { type: 'number', min: 0 },
+    multiplier: { type: 'number', min: 1 },
+    maxDelayMs: { type: 'number', min: 1 },
+    maxRetries: { type: 'number', min: 0 },
+    processIntervalMs: { type: 'number', min: 1 },
+  },
+  retryScheduler: {
+    enabled: { type: 'boolean' },
+    pollIntervalMs: { type: 'number', min: 1000 },
+    lockTimeoutMs: { type: 'number', min: 1000 },
+    batchSize: { type: 'number', min: 1 },
+    baseDelayMs: { type: 'number', min: 0 },
+    multiplier: { type: 'number', min: 1 },
+    maxDelayMs: { type: 'number', min: 1 },
+  },
   rateLimit: {
     enabled: { type: 'boolean' },
     windowMs: { type: 'number', min: 1000 },
