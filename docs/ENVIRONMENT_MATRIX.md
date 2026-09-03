@@ -31,7 +31,6 @@
 | `DISCORD_WEBHOOK_URL` | string (URL) | Conditional | *(None)* | All | **Yes** (Secret) | Discord webhook endpoint URL for notification delivery. Required if `DISCORD_WEBHOOK_ID` is set. |
 | `DISCORD_WEBHOOK_ID` | string | Conditional | *(None)* | All | **Yes** (Secret) | Unique Discord webhook identifier. Required if `DISCORD_WEBHOOK_URL` is set. |
 | `DISCORD_RETRY_COUNT` | integer | Optional | `5` (uses `RETRY_MAX_RETRIES`) | All | No | Maximum delivery attempts for Discord webhook notifications. |
-| `DISCORD_BACKOFF_BASE_SECONDS` | integer | Optional | `5` | All | No | Exponential backoff base delay in seconds between failed Discord notification retries. |
 | `NOTIFICATION_DEDUPLICATION_WINDOW_MS` | integer | Optional | `60000` | All | No | Time window in milliseconds within which duplicate outgoing messages are suppressed. |
 | `NOTIFICATION_DEDUPLICATION_MAX_SIZE` | integer | Optional | `10000` | All | No | Maximum entries maintained in memory for message deduplication. |
 | `WEBHOOK_SECRETS` | JSON Array | Optional | `[]` | All | **Yes** (Secret) | Array of `{ id: string, secret: string }` pairs used to generate and verify HMAC signatures. |

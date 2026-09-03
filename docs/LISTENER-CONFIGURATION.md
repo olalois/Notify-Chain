@@ -9,7 +9,7 @@ Configuration is loaded primarily by `loadConfig()` in [`listener/src/config.ts`
 | Core listener config | `listener/src/config.ts` → `loadConfig()` |
 | Archive worker | `listener/src/services/archive-config.ts` → `loadArchiveConfig()` |
 | Logging | `listener/src/utils/logger.ts` |
-| Discord retry overrides | `listener/src/index.ts` (`DISCORD_RETRY_COUNT`, `DISCORD_BACKOFF_BASE_SECONDS`) |
+| Notification retry backoff | `listener/src/config.ts` (`RETRY_*`) |
 | Payload integrity HMAC | `PAYLOAD_INTEGRITY_SECRET` (scheduler / repository) |
 | Env template | [`listener/.env.example`](../listener/.env.example) |
 
@@ -166,7 +166,6 @@ Legend for **Required**:
 | `NOTIFICATION_DEDUPLICATION_WINDOW_MS` | integer (ms) | `60000` | No (defaulted; Discord only) | In-memory notification dedup window |
 | `NOTIFICATION_DEDUPLICATION_MAX_SIZE` | integer | `10000` | No (defaulted; Discord only) | Max dedup cache entries |
 | `DISCORD_RETRY_COUNT` | integer | unset → service default (`5` when unset in Discord service) | No | Per-delivery HTTP retry count override (read in `index.ts`) |
-| `DISCORD_BACKOFF_BASE_SECONDS` | number | unset → service default (`1` second base when unset) | No | Base seconds for Discord HTTP exponential backoff |
 
 If only one of `DISCORD_WEBHOOK_URL` / `DISCORD_WEBHOOK_ID` is set, `loadConfig()` throws `ConfigError`.
 
@@ -203,13 +202,14 @@ When unset, integrity hashing/verification paths that depend on this secret are 
 
 | Name | Type | Default | Required | Purpose / effect |
 |------|------|---------|----------|------------------|
-| `RETRY_BASE_DELAY_MS` | integer (ms) | `5000` | No (defaulted) | Base delay for exponential backoff |
+| `RETRY_BASE_DELAY_MS` | integer (ms) | `5000` | No (defaulted) | Shared base delay for notification exponential backoff |
 | `RETRY_MAX_RETRIES` | integer | `5` | No (defaulted) | Max in-memory retries before giving up |
-| `RETRY_MULTIPLIER` | integer | `2` | No (defaulted) | Backoff multiplier |
+| `RETRY_MULTIPLIER` | number | `2` | No (defaulted) | Shared backoff multiplier, must be at least 1 |
+| `RETRY_MAX_DELAY_MS` | integer (ms) | `3600000` (1h) | No (defaulted) | Shared maximum delay cap; must be at least the base delay |
 | `RETRY_JITTER` | boolean-like | enabled unless `false` | No (defaulted) | Randomize delay |
 | `RETRY_QUEUE_PROCESS_INTERVAL_MS` | integer (ms) | `5000` | No (defaulted) | How often the in-memory retry queue is drained |
 
-Also used by the DB-backed retry scheduler for `baseDelayMs` / `multiplier` / `jitter` (see below). `RETRY_MAX_DELAY_MS` clamps the **scheduler** delay.
+These settings are used by both the in-memory queue and DB-backed retry scheduler, independently of the notification provider. `RETRY_MAX_DELAY_MS` is a hard upper bound, including when jitter is enabled.
 
 ### Database-backed retry scheduler
 
@@ -220,7 +220,6 @@ Also used by the DB-backed retry scheduler for `baseDelayMs` / `multiplier` / `j
 | `RETRY_SCHEDULER_LOCK_TIMEOUT_MS` | integer (ms) | `60000` | No (defaulted) | Worker lock timeout |
 | `RETRY_SCHEDULER_PROCESSOR_ID` | string | unset | No | Worker identity (useful with multiple instances) |
 | `RETRY_SCHEDULER_BATCH_SIZE` | integer | `10` | No (defaulted) | Jobs per tick |
-| `RETRY_MAX_DELAY_MS` | integer (ms) | `3600000` (1h) | No (defaulted) | Max backoff clamp for retry scheduler |
 
 ### Scheduled notification scheduler
 

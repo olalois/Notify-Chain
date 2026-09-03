@@ -5,6 +5,7 @@ import { generateCorrelationId } from '../utils/request-id';
 import { getEventName } from '../utils/event-utils';
 import { getNotificationAnalyticsAggregator, NotificationAnalyticsAggregator } from './notification-analytics-aggregator';
 import { NotificationType } from '../types/scheduled-notification';
+import { calculateBackoffDelay } from './retry-backoff';
 
 export enum Priority {
   Low = 0,
@@ -16,6 +17,7 @@ export interface RetryQueueOptions {
   baseDelayMs?: number;
   multiplier?: number;
   jitter?: boolean;
+  maxDelayMs?: number;
   maxRetries?: number;
   processIntervalMs?: number;
   priorityWeights?: { high: number; medium: number; low: number };
@@ -35,6 +37,7 @@ const DEFAULTS = {
   baseDelayMs: 5_000,
   multiplier: 2,
   jitter: true,
+  maxDelayMs: 60 * 60 * 1_000,
   maxRetries: 5,
   processIntervalMs: 5_000,
   priorityWeights: { high: 5, medium: 2, low: 1 },
@@ -52,6 +55,7 @@ export class NotificationRetryQueue {
   private readonly baseDelayMs: number;
   private readonly multiplier: number;
   private readonly jitter: boolean;
+  private readonly maxDelayMs: number;
   private readonly maxRetries: number;
   private readonly processIntervalMs: number;
   private readonly priorityWeights: { high: number; medium: number; low: number };
@@ -74,6 +78,7 @@ export class NotificationRetryQueue {
     this.baseDelayMs = options?.baseDelayMs ?? DEFAULTS.baseDelayMs;
     this.multiplier = options?.multiplier ?? DEFAULTS.multiplier;
     this.jitter = options?.jitter ?? DEFAULTS.jitter;
+    this.maxDelayMs = options?.maxDelayMs ?? DEFAULTS.maxDelayMs;
     this.maxRetries = options?.maxRetries ?? DEFAULTS.maxRetries;
     this.processIntervalMs = options?.processIntervalMs ?? DEFAULTS.processIntervalMs;
     this.priorityWeights = options?.priorityWeights ?? DEFAULTS.priorityWeights;
@@ -280,8 +285,12 @@ export class NotificationRetryQueue {
   }
 
   private calculateDelay(retryCount: number): number {
-    const base = this.baseDelayMs * Math.pow(this.multiplier, retryCount);
-    return this.jitter ? base * (0.5 + Math.random() * 0.5) : base;
+    return calculateBackoffDelay(retryCount, {
+      baseDelayMs: this.baseDelayMs,
+      multiplier: this.multiplier,
+      maxDelayMs: this.maxDelayMs,
+      jitter: this.jitter,
+    });
   }
 }
 

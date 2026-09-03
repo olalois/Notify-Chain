@@ -7,6 +7,7 @@ import { getNotificationAnalyticsAggregator, NotificationAnalyticsAggregator } f
 import { sendWebhook } from './webhook-sender';
 import { NotificationType } from '../types/scheduled-notification';
 import { generateCorrelationId } from '../utils/request-id';
+import { DEFAULT_RETRY_BACKOFF, RetryBackoffConfig, calculateBackoffDelay } from './retry-backoff';
 
 export const MAX_DISCORD_EMBED_LENGTH = 6000;
 export const MAX_DISCORD_FIELD_VALUE_LENGTH = 1024;
@@ -89,12 +90,18 @@ async function safeReadResponseBody(response: Response, maxLength = 300): Promis
 
 export class DiscordNotificationService {
   private config: DiscordConfig;
+  private readonly retryBackoff: RetryBackoffConfig;
   private deduplicator: NotificationDeduplicator;
   private timeoutCount: number = 0;
   private readonly analytics: NotificationAnalyticsAggregator | null;
 
-  constructor(config: DiscordConfig, deduplicator?: NotificationDeduplicator) {
+  constructor(
+    config: DiscordConfig,
+    deduplicator?: NotificationDeduplicator,
+    retryBackoff: Partial<RetryBackoffConfig> = {},
+  ) {
     this.config = config;
+    this.retryBackoff = { ...DEFAULT_RETRY_BACKOFF, ...retryBackoff };
     this.deduplicator =
       deduplicator ??
       new NotificationDeduplicator({
@@ -142,7 +149,6 @@ export class DiscordNotificationService {
 
     const message = this.formatEventMessage(event, contractConfig);
     const maxRetries = this.config.retryCount ?? 5;
-    const backoffBaseSeconds = this.config.backoffBaseSeconds ?? 1;
 
     let attempt = 0;
     while (attempt <= maxRetries) {
@@ -199,8 +205,7 @@ export class DiscordNotificationService {
       // If we've exhausted retries, break and return false
       if (attempt >= maxRetries) break;
 
-      // Exponential backoff: base * 2^attempt (seconds)
-      const delayMs = Math.pow(2, attempt) * backoffBaseSeconds * 1000;
+      const delayMs = calculateBackoffDelay(attempt, this.retryBackoff);
       logger.warn('Retrying Discord webhook', {
         ...logContext,
         delayMs,

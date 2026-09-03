@@ -6,6 +6,7 @@ import { ScheduledNotification, NotificationStatus } from '../types/scheduled-no
 import { DiscordNotificationService } from './discord-notification';
 import { WebhookDeliveryService } from './webhook-delivery-service';
 import { getWorkerManager } from './worker-manager';
+import { calculateBackoffDelay as calculateConfiguredBackoffDelay } from './retry-backoff';
 
 export interface RetrySchedulerConfig {
   /** Whether the scheduler is enabled. */
@@ -52,8 +53,12 @@ export function calculateBackoffDelay(
   maxDelayMs: number,
   jitter: boolean
 ): number {
-  const raw = Math.min(baseDelayMs * Math.pow(multiplier, attempt), maxDelayMs);
-  return jitter ? raw * (0.75 + Math.random() * 0.5) : raw;
+  return calculateConfiguredBackoffDelay(attempt, {
+    baseDelayMs,
+    multiplier,
+    maxDelayMs,
+    jitter,
+  });
 }
 
 /**

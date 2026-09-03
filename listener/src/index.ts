@@ -129,7 +129,7 @@ async function main() {
 
       let discordService: DiscordNotificationService | null = null;
       if (config.discord) {
-        discordService = new DiscordNotificationService(config.discord);
+        discordService = new DiscordNotificationService(config.discord, undefined, config.retryQueue);
       }
 
       scheduler = new NotificationScheduler(repository, config.scheduler, discordService);

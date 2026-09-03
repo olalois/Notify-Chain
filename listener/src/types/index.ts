@@ -19,6 +19,7 @@ export interface RetryQueueConfig {
   baseDelayMs?: number;
   multiplier?: number;
   jitter?: boolean;
+  maxDelayMs?: number;
   maxRetries?: number;
   processIntervalMs?: number;
 }

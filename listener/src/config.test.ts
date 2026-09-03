@@ -517,5 +517,26 @@ describe('Config validation', () => {
         'RETRY_MAX_DELAY_MS must be >= RETRY_BASE_DELAY_MS'
       );
     });
+
+    it('rejects invalid shared retry backoff values', () => {
+      process.env.RETRY_BASE_DELAY_MS = '-1';
+      process.env.RETRY_MULTIPLIER = '0';
+      process.env.RETRY_MAX_DELAY_MS = '0';
+
+      const config = loadConfig();
+
+      expect(() => validateConfig(config)).toThrow(ConfigError);
+      expect(() => validateConfig(config)).toThrow('RETRY_BASE_DELAY_MS must be >= 0');
+      expect(() => validateConfig(config)).toThrow('RETRY_MULTIPLIER must be >= 1');
+      expect(() => validateConfig(config)).toThrow('RETRY_MAX_DELAY_MS must be > 0');
+    });
+
+    it('rejects non-integer retry backoff environment values', () => {
+      process.env.RETRY_BASE_DELAY_MS = '1000.5';
+
+      expect(() => loadConfig()).toThrow(
+        'RETRY_BASE_DELAY_MS must be a valid integer, got "1000.5"'
+      );
+    });
   });
 });

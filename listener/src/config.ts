@@ -41,8 +41,8 @@ function validateRequiredEnvVars(): void {
 function parseIntegerEnv(name: string, defaultValue: string): number {
   const rawValue = trimEnv(name);
   const value = rawValue !== undefined ? rawValue : defaultValue;
-  const parsed = Number.parseInt(value, 10);
-  if (Number.isNaN(parsed)) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) {
     throw new ConfigError(`${name} must be a valid integer, got "${value}"`);
   }
   return parsed;
@@ -275,6 +275,7 @@ export function loadConfig(): Config {
       maxRetries: parseIntegerEnv('RETRY_MAX_RETRIES', '5'),
       multiplier: parseIntegerEnv('RETRY_MULTIPLIER', '2'),
       jitter: trimEnv('RETRY_JITTER') !== 'false',
+      maxDelayMs: parseIntegerEnv('RETRY_MAX_DELAY_MS', String(60 * 60 * 1000)),
       processIntervalMs: parseIntegerEnv('RETRY_QUEUE_PROCESS_INTERVAL_MS', '5000'),
     },
     eventQueue: {
@@ -529,6 +530,29 @@ export function validateConfig(config: Config): void {
   }
 
   // ── Retry scheduler ────────────────────────────────────────────────────────
+  const retryBackoff = config.retryQueue;
+  if (retryBackoff) {
+    if (retryBackoff.baseDelayMs !== undefined && retryBackoff.baseDelayMs < 0) {
+      errors.push(`RETRY_BASE_DELAY_MS must be >= 0 (received: ${retryBackoff.baseDelayMs}).`);
+    }
+    if (retryBackoff.multiplier !== undefined && retryBackoff.multiplier < 1) {
+      errors.push(`RETRY_MULTIPLIER must be >= 1 (received: ${retryBackoff.multiplier}).`);
+    }
+    if (retryBackoff.maxDelayMs !== undefined && retryBackoff.maxDelayMs <= 0) {
+      errors.push(`RETRY_MAX_DELAY_MS must be > 0 (received: ${retryBackoff.maxDelayMs}).`);
+    }
+    if (
+      retryBackoff.baseDelayMs !== undefined &&
+      retryBackoff.maxDelayMs !== undefined &&
+      retryBackoff.maxDelayMs < retryBackoff.baseDelayMs
+    ) {
+      errors.push(
+        'RETRY_MAX_DELAY_MS must be >= RETRY_BASE_DELAY_MS. ' +
+          `Received max=${retryBackoff.maxDelayMs}, base=${retryBackoff.baseDelayMs}.`,
+      );
+    }
+  }
+
   if (config.retryScheduler) {
     if (config.retryScheduler.pollIntervalMs < 1000) {
       errors.push(

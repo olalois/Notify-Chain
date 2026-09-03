@@ -41,7 +41,7 @@ export class EventSubscriber {
     }
     
     if (config.discord) {
-      this.discordService = new DiscordNotificationService(config.discord);
+      this.discordService = new DiscordNotificationService(config.discord, undefined, config.retryQueue);
       this.retryQueue = new NotificationRetryQueue(
         (event, contractConfig, requestId) =>
           this.discordService!.sendEventNotification(event, contractConfig, requestId),
